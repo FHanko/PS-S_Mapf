@@ -6,6 +6,7 @@ int: agents;
 set of int: AGENTS = 1..(agents);
 % Decision problem for now (does path exist in time <= 'time'?)
 int: time;
+var 1..time: makespan;
 set of int: TIME = 1..(time);
 
 type Pos = var record(var ZW: x, var ZH: y);
@@ -33,15 +34,15 @@ constraint forall (t in 2..time, i in AGENTS) (manhattan(pos[i,t-1], pos[i,t]) <
 % Calculate distance to goal.
 constraint forall (t in TIME, i in AGENTS) (goalDistance[i, t] = manhattan(pos[i,t], goal[i]));
 
-constraint forall (i in AGENTS) (goalDistance[i, time] <= 0);
+constraint forall (t in TIME, i in AGENTS) ((goalDistance[i, t] <= 0) <-> makespan = t);
 
-solve satisfy;
+solve minimize makespan;
 
 output [
         (if y==0 /\ x==0 /\ t==1 then "\nAgent: \(a)\n" else "" endif) ++
         (if (x: x,y: y) == fix(pos[a, t]) then "*" elseif (x: x,y: y) in fix(pos[a, 1..t-1]) then "-" else "." endif) ++ 
         (if x==(width-1) then "   " else " " endif) ++
-        (if t==time /\ x==(width-1) then "\n" else "" endif)
-        | a in AGENTS, y in ZH, t in TIME, x in ZW 
+        (if t==fix(makespan) /\ x==(width-1) then "\n" else "" endif)
+        | a in AGENTS, y in ZH, t in 1..fix(makespan), x in ZW 
        ]
 
