@@ -1,8 +1,0 @@
-agents = 2;
-height = 4;
-width = 4;
-time = 10;
-xstart = [0, 3];
-ystart = [0, 3];
-xgoal = [3, 0];
-ygoal = [3, 0];
