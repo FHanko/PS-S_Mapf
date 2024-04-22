@@ -16,7 +16,7 @@ array[AGENTS] of Pos: start;
 % Goal position of agents.
 array[AGENTS] of Pos: goal;
 % Position of agents at time.
-array[AGENTS, TIME] of Pos: pos;
+array[AGENTS, TIME] of var Pos: pos;
 % Distance from agent to goal at time.
 array[AGENTS, TIME] of var 0..(width*height): goalDistance;
 
@@ -29,12 +29,12 @@ constraint forall (i in AGENTS) (manhattan(start[i], pos[i,1]) == 0);
 constraint forall (t in TIME, i,j in AGENTS) (i == j \/ manhattan(pos[i,t], pos[j,t]) != 0);
 
 % Agents can only move 1 step per time (no diagonals for now).
-constraint forall (t in 2..time, i in AGENTS) (manhattan(pos[i,t-1], pos[i,t]) <= 1);
+constraint forall (t in 1..(time-1), i in AGENTS) (manhattan(pos[i,t], pos[i,t+1]) <= 1);
 
 % Calculate distance to goal.
 constraint forall (t in TIME, i in AGENTS) (goalDistance[i, t] = manhattan(pos[i,t], goal[i]));
 
-constraint forall (t in TIME, i in AGENTS) ((goalDistance[i, t] <= 0) <-> makespan = t);
+constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i, t] == 0) <-> makespan == t);
 
 solve minimize makespan;
 
