@@ -2,7 +2,7 @@
   "agents": 2,
   "height": 4,
   "width": 4,
-  "time": 10,
+  "time": 1000,
   "start": [
   { "x":0, "y":0 },
   { "x":3, "y":3 }
