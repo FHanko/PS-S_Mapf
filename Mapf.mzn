@@ -20,23 +20,22 @@ array[AGENTS, TIME] of var Pos: pos;
 array[AGENTS, TIME] of var 0..(width*height): goalDistance;
 % Flag for each time: Are all goals reached?
 array[TIME] of var 0..1: goalsReached;
-var 0..time: makespan;
+var 1..(time-1): makespan;
 
 function var int: manhattan(var Pos: pos1, var Pos: pos2) = abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y);
 
 % Agents start at their respective starting position.
-constraint forall (i in AGENTS) (manhattan(start[i], pos[i,1]) == 0);
-% Setting the endpoint at max time actual improves performance (atleast when time >>> makespan).
-constraint forall (i in AGENTS) (manhattan(goal[i], pos[i,time]) == 0);
+constraint forall (i in AGENTS) (manhattan(start[i], pos[i, 1]) == 0);
+constraint forall (i in AGENTS) (manhattan(pos[i, makespan], goal[i]) == 0);
 
 % No two agents share the same position at the same time (they can move through each other for now).
-constraint forall (t in TIME, i,j in AGENTS) (i == j \/ manhattan(pos[i,t], pos[j,t]) != 0);
+constraint forall (t in 1..makespan, i,j in AGENTS) (i == j \/ manhattan(pos[i,t], pos[j,t]) != 0);
 
-% Agents can only move 1 step per time (no diagonals for now).
-constraint forall (t in 1..(time-1), i in AGENTS) (manhattan(pos[i,t], pos[i,t+1]) <= 1);
+% Agents can only move 1 step per time (no diagonals).
+constraint forall (t in 1..makespan, i in AGENTS) (manhattan(pos[i,t], pos[i,t+1]) <= 1);
 
 % Calculate distance to goal.
-constraint forall (t in TIME, i in AGENTS) (goalDistance[i, t] == manhattan(pos[i,t], goal[i]));
+constraint forall (t in 1..makespan, i in AGENTS) (goalDistance[i, t] == manhattan(pos[i,t], goal[i]));
 
 % Set goalsReached flag
 constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i, t] == 0) <-> goalsReached[t] == 0);
@@ -48,8 +47,11 @@ solve minimize makespan;
 
 output [
         (if y==0 /\ x==0 /\ t==1 then "\nAgent: \(a)\n" else "" endif) ++
-        (if (x: x,y: y) == fix(pos[a, t]) then "*" elseif (x: x,y: y) in fix(pos[a, 1..t-1]) then "-" else "." endif) ++ 
+        (if (x: x,y: y) == fix(pos[a, t]) then "#" elseif 
+          ((x: x,y: y) in [fix(start[a]), fix(goal[a])]) then "*" elseif
+          (x: x,y: y) in fix(pos[a, 1..t-1]) then "+" else
+          "□" endif) ++ 
         (if x==(width-1) then "   " else " " endif) ++
         (if t==fix(makespan) /\ x==(width-1) then "\n" else "" endif)
         | a in AGENTS, y in ZH, t in 1..fix(makespan), x in ZW 
-       ]
+       ] ++ ["\n\n\(fix(makespan))"]
