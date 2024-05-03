@@ -5,6 +5,7 @@
 
 import com.google.gson.GsonBuilder
 import java.io.File
+import kotlin.math.abs
 import kotlin.random.Random
 
 if (!File("data").exists()) {
@@ -16,6 +17,8 @@ if (!File("data").exists()) {
 data class Pos(val x: Int, val y: Int)
 data class Instance(val width: Int, val height: Int, val agents: Int, val start: List<Pos>, val goal: List<Pos>, val time:Int)
 
+fun manhattan(p1: Pos, p2: Pos) = abs(p1.x - p2.x) + abs(p1.y - p2.y)
+
 val instances = mutableListOf<Instance>()
 (10..50 step 10).forEach { gridSize ->
     (5..20 step 5).forEach { agentCount ->
@@ -24,7 +27,9 @@ val instances = mutableListOf<Instance>()
         while (startPos.count() < agentCount) startPos.add(Pos(Random.nextInt(0, gridSize), Random.nextInt(0, gridSize)))
         while (endPos.count() < agentCount) endPos.add(Pos(Random.nextInt(0, gridSize), Random.nextInt(0, gridSize)))
         instances.add(
-            Instance(gridSize, gridSize, agentCount, startPos.toList(), endPos.toList(), gridSize*2)
+            Instance(gridSize, gridSize, agentCount, startPos.toList(), endPos.toList(),
+                startPos.zip(endPos).maxOf { manhattan(it.first, it.second) } + 2
+            )
         )
     }
 }
