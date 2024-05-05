@@ -6,7 +6,7 @@ int: agents;
 set of int: AGENTS = 1..(agents);
 % Decision problem (does path exist in time <= 'time'?)
 int: time;
-set of int: TIME = 1..(time);
+set of int: TIME = 1..(time+1);
 
 type Pos = var record(var ZW: x, var ZH: y);
 
@@ -20,7 +20,7 @@ array[AGENTS, TIME] of var Pos: pos;
 array[AGENTS, TIME] of var 0..(width*height): goalDistance;
 % Flag for each time: Are all goals reached?
 array[TIME] of var 0..1: goalsReached;
-var 1..(time-1): makespan;
+var 1..(time): makespan;
 
 function var 0..(width*height): manhattan(var Pos: pos1, var Pos: pos2) = abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y);
 function var bool: idPos(var Pos: pos1, var Pos: pos2) = pos1.x == pos2.x /\ pos1.y == pos2.y;
@@ -40,7 +40,15 @@ constraint forall (t in 1..makespan, i in AGENTS) (goalDistance[i,t] == manhatta
 
 constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i,t] == 0) <-> makespan == t);
 
-solve minimize makespan;
+% Cost of path for each agent.
+array[AGENTS, TIME] of var int: cost;
+
+constraint forall (i in AGENTS) (cost[i, 1] == 1);
+constraint forall (t in 1..makespan, i in AGENTS) (cost[i, t+1] == (cost[i, t] + manhattan(pos[i, t], pos[i, t+1])));
+var int: soc;
+constraint soc = sum([cost[i, makespan] | i in AGENTS]);
+
+solve minimize makespan * soc;
 
 output [
         (if y==0 /\ x==0 /\ t==1 then "\nAgent: \(a)\n" else "" endif) ++
@@ -51,4 +59,4 @@ output [
         (if x==(width-1) then "   " else " " endif) ++
         (if t==fix(makespan) /\ x==(width-1) then "\n" else "" endif)
         | a in AGENTS, y in ZH, t in 1..fix(makespan), x in ZW 
-       ] ++ ["\n\n\(fix(makespan))"]
+       ] ++ ["\n\n\(fix(makespan))"] ++ ["\n\n\([cost[i,fix(makespan)] | i in AGENTS])"]
