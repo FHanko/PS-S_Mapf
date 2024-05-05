@@ -22,28 +22,35 @@ array[AGENTS, TIME] of var 0..(width*height): goalDistance;
 array[TIME] of var 0..1: goalsReached;
 var 1..(time-1): makespan;
 
-function var int: manhattan(var Pos: pos1, var Pos: pos2) = abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y);
+function var 0..(width*height): manhattan(var Pos: pos1, var Pos: pos2) = abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y);
+function var bool: idPos(var Pos: pos1, var Pos: pos2) = pos1.x == pos2.x /\ pos1.y == pos2.y;
+
+/*
+% Cost of path for each agent.
+array[AGENTS, TIME] of var int: cost;
+
+constraint forall (i in AGENTS) (cost[i, 1] == 0);
+constraint forall (t in 1..makespan, i in AGENTS) (cost[i, t+1] == (cost[i, t] + manhattan(pos[i, t], pos[i, t+1])));
+*/
 
 % Agents start at their respective starting position.
-constraint forall (i in AGENTS) (manhattan(start[i], pos[i, 1]) == 0);
-constraint forall (i in AGENTS) (manhattan(pos[i, makespan], goal[i]) == 0);
+constraint forall (i in AGENTS) (idPos(start[i], pos[i,1]));
+constraint forall (i in AGENTS) (idPos(pos[i,makespan], goal[i]));
 
-% No two agents share the same position at the same time (they can move through each other for now).
-constraint forall (t in 1..makespan, i,j in AGENTS) (i == j \/ manhattan(pos[i,t], pos[j,t]) != 0);
+% No two agents share the same position at the same time.
+constraint forall (t in 1..makespan, i,j in AGENTS) (i == j \/ not idPos(pos[i,t], pos[j,t]));
+
+% Agents are not allowed to swap position
+%constraint forall (t in 1..makespan, i,j in AGENTS) (not (idPos(pos[i,t+1], pos[j,t]) /\ idPos(pos[j, t+1], pos[i,t])));
 
 % Agents can only move 1 step per time (no diagonals).
 constraint forall (t in 1..makespan, i in AGENTS) (manhattan(pos[i,t], pos[i,t+1]) <= 1);
 
 % Calculate distance to goal.
-constraint forall (t in 1..makespan, i in AGENTS) (goalDistance[i, t] == manhattan(pos[i,t], goal[i]));
+constraint forall (t in 1..makespan, i in AGENTS) (goalDistance[i,t] == manhattan(pos[i,t], goal[i]));
 
-% Set goalsReached flag
-constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i, t] == 0) <-> goalsReached[t] == 0);
-constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i, t] != 0) <-> goalsReached[t] == 1);
+constraint forall (t in TIME) (forall (i in AGENTS) (goalDistance[i,t] == 0) <-> makespan == t);
 
-% Calcualting the makespan like this improves performance over previous attempt.
-constraint makespan == sum(goalsReached)+1;
-solve minimize makespan;
 
 output [
         (if y==0 /\ x==0 /\ t==1 then "\nAgent: \(a)\n" else "" endif) ++
